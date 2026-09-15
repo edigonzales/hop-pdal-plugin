@@ -1,0 +1,46 @@
+<?xml version="1.0" ?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>ch.so.agi</groupId>
+    <artifactId>hop-plugin-parent</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+    <relativePath/>
+  </parent>
+  <artifactId>hop-pdal-plugin-parent</artifactId>
+  <version>0.1.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+  <name>Apache Hop PDAL Plugin</name>
+  <description>Point cloud transforms for Apache Hop based on PDAL and pdal-java-bindings.</description>
+  <modules>
+    <module>pdal/pdal-values</module>
+    <module>assemblies/assemblies-hop-pdal</module>
+  </modules>
+  <properties>
+    <!-- Point cloud transforms use the FFM API (final since Java 22) through
+         pdal-ffm-core, so this plugin requires Java 25 at build and run time. -->
+    <maven.compiler.release>25</maven.compiler.release>
+    <hop.pointcloud.type.version>0.1.0-SNAPSHOT</hop.pointcloud.type.version>
+    <pdal-java.version>0.1.0-pdal2.10.2-SNAPSHOT</pdal-java.version>
+  </properties>
+  <!-- The parent is still a snapshot and is resolved before inheritance, so these repositories
+       are required for local builds. CI provides the same repositories through its settings. -->
+  <repositories>
+    <repository>
+      <id>central</id>
+      <url>https://repo1.maven.org/maven2/</url>
+    </repository>
+    <repository>
+      <id>jars-interlis</id>
+      <url>https://jars.interlis.ch/</url>
+    </repository>
+    <repository>
+      <id>sogeo-releases</id>
+      <url>https://jars.interlis.guru/releases/</url>
+    </repository>
+    <repository>
+      <id>sogeo-snapshots</id>
+      <url>https://jars.interlis.guru/snapshots/</url>
+    </repository>
+  </repositories>
+</project>

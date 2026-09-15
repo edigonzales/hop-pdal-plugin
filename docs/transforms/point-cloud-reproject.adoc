@@ -1,0 +1,67 @@
+[[point-cloud-reproject]]
+= Point Cloud Reproject
+:plugin-id: SOGIS_POINTCLOUD_REPROJECT
+:plugin-type: transform
+:description: Plans a CRS transformation of a point cloud.
+
+The Point Cloud Reproject transform appends a `filters.reprojection` stage to the pipeline plan of
+a Point Cloud value. The transformation itself runs when the Point Cloud Writer executes the plan.
+
+== Description
+
+The target CRS is given as an authority code (`EPSG:2056`) or as WKT. The planned schema records
+the new CRS; the bounds remain the source bounds, because the exact footprint in the target CRS is
+only known after execution.
+
+Chaining a reprojection with a crop is possible, but the crop bounds then refer to the CRS state at
+that point of the plan.
+
+== Input
+
+A field with the Hop type `Point Cloud`, usually produced by the Point Cloud Reader.
+
+== Options
+
+[cols="1,3,1",options="header"]
+|===
+|Option |Description |Default
+
+|Point Cloud field
+|Name of the input field.
+|`pointcloud`
+
+|Output field
+|Optional name of a new value field; empty updates the input field in place.
+|(empty)
+
+|Target CRS
+|Target CRS as `AUTHORITY:CODE` or WKT.
+|
+
+|Target CRS is a field
+|Read the target CRS from the named input field instead of using a fixed value.
+|`N`
+|===
+
+== Output
+
+The Point Cloud value with the appended reprojection stage, either in a new field or updated in
+place. The CRS metadata of the value is updated.
+
+== Supported engines
+
+This transform runs on the Hop local engine; the reprojection is executed by the Point Cloud Writer
+through the bundled PDAL runtime (GDAL and PROJ).
+
+== Examples
+
+* `examples/03-reproject.hpl` reprojects a source to `EPSG:2056` and writes the result.
+
+== Error handling
+
+Enable error handling to route rows with missing or unparsable CRS values to an error transform.
+
+== Limitations
+
+Grid based datum shifts require the optional PROJ grid data, which is not part of the standard
+native bundle. Transformations that need such grids fail at execution time with a PROJ error.

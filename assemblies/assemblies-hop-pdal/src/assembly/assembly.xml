@@ -1,0 +1,48 @@
+<assembly xmlns="http://maven.apache.org/ASSEMBLY/2.1.1"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.1.1 https://maven.apache.org/xsd/assembly-2.1.1.xsd">
+  <id>plugin</id>
+  <formats>
+    <format>zip</format>
+  </formats>
+  <includeBaseDirectory>false</includeBaseDirectory>
+
+  <dependencySets>
+    <!-- Keep only the Hop transform jar in the plugin root. -->
+    <dependencySet>
+      <useProjectArtifact>false</useProjectArtifact>
+      <useTransitiveDependencies>false</useTransitiveDependencies>
+      <outputDirectory>plugins/transforms/pdal</outputDirectory>
+      <scope>runtime</scope>
+      <unpack>false</unpack>
+      <includes>
+        <include>ch.so.agi:hop-pdal-values</include>
+      </includes>
+    </dependencySet>
+
+    <!-- Hop automatically adds jars from a plugin's lib/ directory to its classloader.
+         hop-pointcloud-* is deliberately excluded: it is installed once by the Point
+         Cloud Type plugin and referenced through dependencies.xml. -->
+    <dependencySet>
+      <useProjectArtifact>false</useProjectArtifact>
+      <useTransitiveDependencies>true</useTransitiveDependencies>
+      <outputDirectory>plugins/transforms/pdal/lib</outputDirectory>
+      <scope>runtime</scope>
+      <unpack>false</unpack>
+      <excludes>
+        <exclude>ch.so.agi:hop-pdal-values</exclude>
+        <exclude>ch.so.agi:hop-pointcloud-core</exclude>
+        <exclude>ch.so.agi:hop-pointcloud-type</exclude>
+        <exclude>org.apache.hop:*</exclude>
+        <exclude>org.slf4j:*</exclude>
+      </excludes>
+    </dependencySet>
+  </dependencySets>
+
+  <files>
+    <file>
+      <source>src/assembly/dependencies.xml</source>
+      <outputDirectory>plugins/transforms/pdal</outputDirectory>
+    </file>
+  </files>
+</assembly>

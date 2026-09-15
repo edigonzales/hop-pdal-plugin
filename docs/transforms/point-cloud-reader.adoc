@@ -1,0 +1,69 @@
+[[point-cloud-reader]]
+= Point Cloud Reader
+:plugin-id: SOGIS_POINTCLOUD_READER
+:plugin-type: transform
+:description: Creates a Point Cloud value from a LAS/LAZ, COPC, EPT, BPF or text source.
+
+The Point Cloud Reader describes a point cloud source and produces a Point Cloud value. Only the
+header of the source is read; no points are loaded and the pipeline is not executed.
+
+== Description
+
+The transform infers the PDAL reader stage from the file extension (`.las`, `.laz`, `.copc.laz`,
+`.ept`, `.ept.json`, `.bpf`, `.ply`, `.pcd`, `.e57`, plain text formats and rasters through
+`readers.gdal`) and uses PDAL's preview mode to build the schema:
+
+* point count
+* axis aligned bounds
+* CRS as WKT and as authority code (for example `EPSG:2056`)
+* the ordered dimension layout with storage types
+
+The value carries the complete pipeline plan; the Point Cloud Writer executes it once.
+
+== Input
+
+The reader is either the first transform after a row source (`Row Generator`, `Data Grid`) or reads
+the path from an input field. It never consumes point data.
+
+== Options
+
+[cols="1,3,1",options="header"]
+|===
+|Option |Description |Default
+
+|Point Cloud field
+|Name of the new value field.
+|`pointcloud`
+
+|Source
+|File path or public HTTP(S) URL of the point cloud.
+|
+
+|Source is a field
+|Read the source location from the named input field instead of using a fixed value.
+|`N`
+|===
+
+== Output
+
+One new field with the Hop type `Point Cloud`. The row itself is passed through unchanged.
+
+== Supported engines
+
+This transform uses the bundled PDAL runtime and runs on the Hop local engine. Java 25 is required
+(`--enable-native-access=ALL-UNNAMED`).
+
+== Examples
+
+* `examples/01-read-write.hpl` reads a file and writes it again.
+* `examples/02-crop.hpl` reads a file, crops it and writes the result.
+
+== Error handling
+
+Enable error handling to route rows with unsupported formats, missing files or unreadable headers
+to an error transform.
+
+== Limitations
+
+Only formats of the bundled PDAL runtime are available. Optional PDAL plugins (E57, TileDB, ...)
+are not part of the standard bundle and report `Couldn't create stage of type ...`.
