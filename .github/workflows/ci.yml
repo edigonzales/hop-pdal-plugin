@@ -75,6 +75,14 @@ jobs:
           tools/natives/audit-runtime-deps.sh ${{ matrix.classifier }}
           ./gradlew publishToMavenLocal
 
+      - name: Verify remote COPC reads (TLS)
+        shell: bash
+        working-directory: .ci/pdal-java-bindings
+        env:
+          PDAL_FFM_RUN_INTEGRATION: 'true'
+          PDAL_FFM_RUN_REMOTE: 'true'
+        run: ./gradlew :pdal-ffm-core:integrationTest --tests '*RemoteIntegrationTest*'
+
       - name: Install Point Cloud Type plugin
         shell: bash
         working-directory: .ci/hop-pointcloud-type-plugin
