@@ -16,13 +16,31 @@ group with the Point Cloud Type plugin.
 |---|---|
 | Point Cloud Reader | Describe a LAS/LAZ, COPC, EPT, BPF or text source and create a Point Cloud value. |
 | Point Cloud Info | Add point count, bounds, CRS and dimension information without reading points. |
-| Point Cloud Crop | Plan a two or three dimensional bounds crop. |
+| Point Cloud Filter | Keep points matching an expression. |
+| Point Cloud Range | Keep points inside dimension ranges such as `Z[400:900]`. |
+| Point Cloud Calculator | Calculate dimensions (`filters.assign`): `Foo = Z * 2`, range assignments, conditions. |
+| Point Cloud Classification | Set the ASPRS `Classification` dimension. |
+| Point Cloud Thin | Decimation, voxel downsize, grid decimation, Poisson sampling or farthest point sampling. |
+| Point Cloud Outlier | Statistical or radius based outlier removal. |
+| Point Cloud Sort | Sort by dimensions or Morton code. |
+| Point Cloud Transform | Apply a 4x4 transformation matrix. |
+| Point Cloud Ground | SMRF/PMF/CSF ground classification plus optional height above ground. |
+| Point Cloud Crop | Plan a two or three dimensional bounds crop; remote COPC/EPT crops are pushed into the reader. |
 | Point Cloud Reproject | Plan a CRS transformation. |
+| Point Cloud Raw Pipeline | Append or replace raw PDAL stage JSON (expert mode). |
+| Point Cloud Merger | Merge many unprocessed point clouds into one plan (for example many tiles into one COPC). |
 | Point Cloud Writer | Execute the planned pipeline **once** and write the result to a file. |
 
-Planning and execution are separated: reader, info, crop and reproject only describe the work;
-the writer appends the output stage and runs the complete PDAL pipeline in one native call. A
-pipeline `Reader → Crop → Reproject → Writer` never writes intermediate files.
+Planning and execution are separated: reader, info, filters, ground classification and the merger
+only describe the work; the writer appends the output stage and runs the complete PDAL pipeline in
+one native call. A pipeline `Reader → Crop → Ground → Writer` never writes intermediate files.
+
+### Remote COPC/EPT
+
+Remote COPC and EPT sources are read with HTTP range requests. The Point Cloud Crop transform
+pushes its bounds into the reader stage, so only the octree nodes that intersect the crop are
+requested - an extract of a multi-gigabyte public point cloud transfers a few kilobytes and runs in
+seconds instead of downloading the whole file.
 
 ## Requirements
 
@@ -69,11 +87,23 @@ The writer logs the number of written points:
 Write point cloud.0 - Wrote 20001 points to /data/cropped.laz
 ```
 
+Many tiles into one COPC:
+
+```sh
+HOP_OPTIONS="-Xmx2048m --enable-native-access=ALL-UNNAMED" \
+  hop-run.sh --file examples/11-merge-to-copc.hpl -r local \
+  -p INPUT_FILE_1=/data/tile-1.laz -p INPUT_FILE_2=/data/tile-2.laz \
+  -p OUTPUT_FILE=/data/merged.copc.laz
+```
+
+Merging holds all points in native memory (about 90 bytes per point); use the batch option or an
+external builder (Untwine) for very large collections.
+
 ## Building
 
 ```sh
 mvn -B -ntp clean verify                      # unit tests (natives skipped)
-PDAL_RUN_INTEGRATION=true mvn -B -ntp verify  # plus the native integration test
+PDAL_RUN_INTEGRATION=true mvn -B -ntp verify  # plus the native integration tests
 ```
 
 The build resolves `ch.so.agi:pdal-ffm-*` and `ch.so.agi:hop-pointcloud-*` from the local Maven
@@ -91,13 +121,14 @@ the assembly.
 ## CI
 
 `.github/workflows/ci.yml` builds the complete chain per platform: it stages the PDAL natives from
-`pdal-java-bindings`, publishes them to the local Maven repository, installs the Point Cloud Type
-plugin, then builds and tests this plugin including the native integration test. This keeps CI
-self-contained while the `pdal-ffm` artifacts are not yet published to a Maven repository.
+`pdal-java-bindings`, publishes them to the local Maven repository, verifies remote COPC reads over
+TLS, installs the Point Cloud Type plugin, then builds and tests this plugin including the native
+integration tests. This keeps CI self-contained while the `pdal-ffm` artifacts are not yet
+published to a Maven repository.
 
 ## Roadmap
 
-- Filter transforms (expression, range, decimation, voxel, outlier, SMRF/HAG ground filters)
-- Raw PDAL pipeline transform for expert stages
-- Point cloud statistics and block-wise point access (`PointBlock`)
+- Point Cloud Statistics (`filters.stats`) with per dimension fields
+- Point cloud block access (`PointBlock`) and point-to-row coercion
+- Merging with per-source filters (DAG plans) and multiple writers
 - Publishing `pdal-ffm-*` and the plugins to `jars.interlis.guru` (removes the local build step)
