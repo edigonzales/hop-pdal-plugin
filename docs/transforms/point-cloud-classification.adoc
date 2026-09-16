@@ -1,0 +1,63 @@
+[[point-cloud-classification]]
+= Point Cloud Classification
+:plugin-id: SOGIS_POINTCLOUD_CLASSIFICATION
+:plugin-type: transform
+:description: Set the Classification dimension, optionally only for unclassified points
+
+The Point Cloud Classification transform sets the ASPRS classification of points, for example to mark a filtered subset as building (6) or noise (7).
+
+== Description
+
+Set the Classification dimension, optionally only for unclassified points
+
+== Input
+
+A field with the Hop type `Point Cloud`, usually produced by the Point Cloud Reader.
+
+== Options
+
+[cols="1,3,1",options="header"]
+|===
+|Option |Description |Default
+
+|Point Cloud field
+|Name of the input field.
+|`pointcloud`
+
+|Output field
+|Optional new value field; empty updates the input field in place.
+|(empty)
+
+|Classification
+|Classification value to set (ASPRS codes, for example 2 = ground, 6 = building, 7 = noise).
+|(empty)
+
+|Only unclassified
+|Apply the value only to points with `Classification == 0`.
+|`N`
+
+|Condition
+|Optional `where` expression that limits the assignment to a subset of points.
+|(empty)
+|===
+
+== Output
+
+The Point Cloud value with the appended `filters.assign` stage that writes the Classification dimension.
+
+== Supported engines
+
+Planning only: this transform appends a stage to the pipeline plan and runs on the Hop local engine
+without native access. The plan is executed by the Point Cloud Writer in a single PDAL call.
+
+== Examples
+
+* `examples/06-range-classification.hpl` marks a height band as noise.
+
+== Error handling
+
+Enable error handling to route rows with invalid settings or missing values to an error transform.
+
+== Limitations
+
+Only the Classification dimension is written. Use the Point Cloud Calculator for other dimensions.

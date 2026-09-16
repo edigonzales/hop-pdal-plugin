@@ -47,6 +47,30 @@ planned by crop/reproject transforms.
 |Field prefix
 |Prefix for the status fields.
 |(empty)
+
+|Compression
+|LAS compression (`laszip`, `lazperf`, `deflate`); LAS/LAZ output only.
+|(empty, default)
+
+|Minor version
+|LAS minor version (2, 3 or 4); LAS/LAZ output only.
+|(empty, default)
+
+|Extra dimensions
+|Extra dimensions to write, for example `all` or `Foo=float`; LAS/COPC output only.
+|(empty)
+
+|Override CRS
+|CRS written to the file (`a_srs`); empty uses the planned CRS of the value.
+|(empty)
+
+|Threads
+|Writer threads; COPC output only.
+|(empty, default)
+
+|Header forward
+|LAS/COPC header fields to forward from the source (for example `header`, `scale`, `vlr`).
+|(empty)
 |===
 
 == Output

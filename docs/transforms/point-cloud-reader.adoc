@@ -42,6 +42,20 @@ the path from an input field. It never consumes point data.
 |Source is a field
 |Read the source location from the named input field instead of using a fixed value.
 |`N`
+
+|Driver
+|Optional explicit reader stage (`las`, `copc`, `ept`, `bpf`, `ply`, `text`, `gdal`, `pcd`,
+`e57`); empty infers the reader from the file extension.
+|(empty, infer)
+
+|Override CRS
+|CRS to apply when the source has none or has a wrong one (`override_srs`).
+|(empty)
+
+|Resolution
+|Resolution limit for COPC and EPT sources: only octree levels at or above this resolution are
+read (overview queries).
+|(empty)
 |===
 
 == Output

@@ -20,7 +20,11 @@ public final class PdalBackend implements PointCloudBackend {
 
   @Override
   public PointCloudDescriptor describe(String location) throws Exception {
-    String readerType = PdalPipelineJson.readerType(location);
+    return describe(location, PdalPipelineJson.readerType(location));
+  }
+
+  /** Describes a source with an explicitly chosen reader stage type (for example {@code readers.copc}). */
+  public PointCloudDescriptor describe(String location, String readerType) throws Exception {
     String pipeline =
         PdalPipelineJson.render(
             PdalPlan.of(PdalStage.of(readerType, Map.of("filename", location))));

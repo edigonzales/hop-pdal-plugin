@@ -1,0 +1,63 @@
+[[point-cloud-merger]]
+= Point Cloud Merger
+:plugin-id: SOGIS_POINTCLOUD_MERGER
+:plugin-type: transform
+:description: Merge many point clouds into one pipeline and optionally batch them into groups
+
+The Point Cloud Merger aggregates several unprocessed point clouds into a single value. It only buffers pipeline plans, never points: the merged pipeline is executed once by the Point Cloud Writer. Typical use case: many LAZ tiles into one COPC file.
+
+== Description
+
+Merge many point clouds into one pipeline and optionally batch them into groups
+
+== Input
+
+A field with the Hop type `Point Cloud`, usually produced by the Point Cloud Reader.
+
+== Options
+
+[cols="1,3,1",options="header"]
+|===
+|Option |Description |Default
+
+|Point Cloud field
+|Name of the input field.
+|`pointcloud`
+
+|Output field
+|Optional new value field; empty keeps the input field name.
+|`pointcloud`
+
+|Group field
+|Optional field that groups the rows; one merged value is emitted per group.
+|(empty)
+
+|Batch size
+|Optional number of clouds per emitted batch; adds a `<prefix>batch` field.
+|(empty)
+
+|Prefix
+|Prefix of the batch field.
+|(empty)
+|===
+
+== Output
+
+One row per group with the merged Point Cloud value (plus the group field and, when batching, the batch index). The plan contains all reader stages followed by `filters.merge`.
+
+== Supported engines
+
+Planning only: this transform appends a stage to the pipeline plan and runs on the Hop local engine
+without native access. The plan is executed by the Point Cloud Writer in a single PDAL call.
+
+== Examples
+
+* `examples/11-merge-to-copc.hpl` merges two sources into one COPC file.
+
+== Error handling
+
+Enable error handling to route rows with invalid settings or missing values to an error transform.
+
+== Limitations
+
+Inputs must be unprocessed point clouds (reader stage only); add filters after the merger. All sources must share the same CRS. Merging into one COPC holds all points in memory (~90 bytes per point); use batching or an external builder for very large collections.

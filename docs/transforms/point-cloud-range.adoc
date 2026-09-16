@@ -1,0 +1,59 @@
+[[point-cloud-range]]
+= Point Cloud Range
+:plugin-id: SOGIS_POINTCLOUD_RANGE
+:plugin-type: transform
+:description: Keep points within dimension ranges such as Z[400:900] or Classification[2:2]
+
+The Point Cloud Range transform keeps the points inside one or more dimension ranges, using the compact PDAL range syntax.
+
+== Description
+
+Keep points within dimension ranges such as Z[400:900] or Classification[2:2]
+
+== Input
+
+A field with the Hop type `Point Cloud`, usually produced by the Point Cloud Reader.
+
+== Options
+
+[cols="1,3,1",options="header"]
+|===
+|Option |Description |Default
+
+|Point Cloud field
+|Name of the input field.
+|`pointcloud`
+
+|Output field
+|Optional new value field; empty updates the input field in place.
+|(empty)
+
+|Limits
+|Comma separated dimension ranges, for example `Z[400:900],Classification[2:2]`.
+|(empty)
+
+|Condition
+|Optional `where` expression that limits the filter to a subset of points.
+|(empty)
+|===
+
+== Output
+
+The Point Cloud value with the appended `filters.range` stage. The planned point count becomes unknown.
+
+== Supported engines
+
+Planning only: this transform appends a stage to the pipeline plan and runs on the Hop local engine
+without native access. The plan is executed by the Point Cloud Writer in a single PDAL call.
+
+== Examples
+
+* `examples/06-range-classification.hpl` keeps points of a height band.
+
+== Error handling
+
+Enable error handling to route rows with invalid settings or missing values to an error transform.
+
+== Limitations
+
+Limits use the PDAL range syntax; open ends are written as `Z[:500]` or `Z[400:]`.

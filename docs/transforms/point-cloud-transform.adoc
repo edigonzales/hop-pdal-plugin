@@ -1,0 +1,59 @@
+[[point-cloud-transform]]
+= Point Cloud Transform
+:plugin-id: SOGIS_POINTCLOUD_TRANSFORM
+:plugin-type: transform
+:description: Apply a 4x4 transformation matrix to all points
+
+The Point Cloud Transform applies an affine 4x4 matrix, for example for local shifts, rotations or unit conversions.
+
+== Description
+
+Apply a 4x4 transformation matrix to all points
+
+== Input
+
+A field with the Hop type `Point Cloud`, usually produced by the Point Cloud Reader.
+
+== Options
+
+[cols="1,3,1",options="header"]
+|===
+|Option |Description |Default
+
+|Point Cloud field
+|Name of the input field.
+|`pointcloud`
+
+|Output field
+|Optional new value field; empty updates the input field in place.
+|(empty)
+
+|Matrix
+|16 space separated values in row-major order.
+|(empty)
+
+|Condition
+|Optional `where` expression that limits the filter to a subset of points.
+|(empty)
+|===
+
+== Output
+
+The Point Cloud value with the appended `filters.transformation` stage. The planned bounds are the source bounds until the pipeline runs.
+
+== Supported engines
+
+Planning only: this transform appends a stage to the pipeline plan and runs on the Hop local engine
+without native access. The plan is executed by the Point Cloud Writer in a single PDAL call.
+
+== Examples
+
+* `examples/08-sort-transform.hpl` shifts points by a translation matrix.
+
+== Error handling
+
+Enable error handling to route rows with invalid settings or missing values to an error transform.
+
+== Limitations
+
+The matrix is applied in the units of the source CRS. Rotation around a local centre needs a translate-rotate-translate matrix product, which must be prepared outside the transform.

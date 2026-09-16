@@ -101,4 +101,60 @@ class PdalValueMetaTest {
     legacy.setSource("/data/tile.laz");
     assertThatThrownBy(legacy::validateSettings).hasMessageContaining("Legacy");
   }
+
+  @Test
+  void mergerClearsRowAndKeepsGroupAndValue() {
+    var row = new RowMeta();
+    row.addValueMeta(new org.apache.hop.core.row.value.ValueMetaString("tile"));
+    row.addValueMeta(new ValueMetaPointCloud("pointcloud"));
+    row.addValueMeta(new org.apache.hop.core.row.value.ValueMetaString("unrelated"));
+
+    var meta = new PointCloudMergerMeta();
+    meta.setValueField("pointcloud");
+    meta.setGroupField("tile");
+    meta.getFields(row, "merger", null, null, new Variables(), null);
+
+    assertThat(row.size()).isEqualTo(2);
+    assertThat(row.searchValueMeta("tile")).isNotNull();
+    assertThat(row.searchValueMeta("pointcloud")).isNotNull();
+    assertThat(row.searchValueMeta("unrelated")).isNull();
+  }
+
+  @Test
+  void validatesNewOperations() {
+    var filter = new PointCloudFilterMeta();
+    assertThatThrownBy(filter::validateSettings).hasMessageContaining("expression");
+    filter.setExpression("Z > 1");
+    filter.validateSettings();
+
+    var range = new PointCloudRangeMeta();
+    assertThatThrownBy(range::validateSettings).hasMessageContaining("limits");
+
+    var ground = new PointCloudGroundMeta();
+    ground.setComputeHag(true);
+    ground.setHagType("DEM");
+    assertThatThrownBy(ground::validateSettings).hasMessageContaining("DEM");
+
+    var raw = new PointCloudRawPipelineMeta();
+    assertThatThrownBy(raw::validateSettings).hasMessageContaining("Raw pipeline");
+  }
+
+  @Test
+  void parsesAssignedDimensions() {
+    assertThat(PdalValueTransform.assignedDimensions("Foo = Z * 2"))
+        .containsExactly("Foo");
+    assertThat(PdalValueTransform.assignedDimensions("Classification[:]=2, Height = Z"))
+        .containsExactly("Classification", "Height");
+    assertThat(PdalValueTransform.assignedDimensions("")).isEmpty();
+  }
+
+  @Test
+  void readerValidatesResolutionSupport() {
+    var meta = new PointCloudReaderMeta();
+    meta.setSource("/data/tile.laz");
+    meta.setResolution("10");
+    // Resolution is validated at runtime against the reader type.
+    meta.validateSettings();
+    assertThat(meta.getResolution()).isEqualTo("10");
+  }
 }

@@ -1,0 +1,59 @@
+[[point-cloud-raw-pipeline]]
+= Point Cloud Raw Pipeline
+:plugin-id: SOGIS_POINTCLOUD_RAW_PIPELINE
+:plugin-type: transform
+:description: Append or replace pipeline stages with raw PDAL stage JSON (expert mode)
+
+The Point Cloud Raw Pipeline transform adds arbitrary PDAL stages to the plan. It is the escape hatch for stages that do not have their own transform yet.
+
+== Description
+
+Append or replace pipeline stages with raw PDAL stage JSON (expert mode)
+
+== Input
+
+A field with the Hop type `Point Cloud`, usually produced by the Point Cloud Reader.
+
+== Options
+
+[cols="1,3,1",options="header"]
+|===
+|Option |Description |Default
+
+|Point Cloud field
+|Name of the input field.
+|`pointcloud`
+
+|Output field
+|Optional new value field; empty updates the input field in place.
+|(empty)
+
+|Mode
+|`APPEND` adds the stages to the planned pipeline, `REPLACE` replaces the whole plan.
+|`APPEND`
+
+|Pipeline
+|JSON array of stages, for example `[{"type":"filters.head","count":1000}]`.
+|(empty)
+|===
+
+== Output
+
+The Point Cloud value with the raw stages appended or replaced. The planned point count becomes unknown.
+
+== Supported engines
+
+Planning only: this transform appends a stage to the pipeline plan and runs on the Hop local engine
+without native access. The plan is executed by the Point Cloud Writer in a single PDAL call.
+
+== Examples
+
+* `examples/10-raw-pipeline.hpl` adds a `filters.head` stage to limit the points.
+
+== Error handling
+
+Enable error handling to route rows with invalid settings or missing values to an error transform.
+
+== Limitations
+
+Option values must be scalars. Nested option objects (for example COPC VLRs) are not supported. Invalid stage types fail when the writer executes the plan.

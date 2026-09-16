@@ -54,11 +54,25 @@ public final class PdalValueDialog extends BaseTransformDialog {
     var controls = new LinkedHashMap<String, Control>();
     String fields =
         switch (input.operation()) {
-          case READER -> "source sourceField valueField";
+          case READER -> "source sourceField driver valueField overrideSrs resolution";
           case INFO -> "valueField infoFields prefix";
           case CROP -> "valueField outputValueField boundsFields minX minY minZ maxX maxY maxZ";
           case REPROJECT -> "valueField outputValueField targetCrs targetCrsField";
-          case WRITER -> "valueField source sourceField overwrite prefix";
+          case WRITER ->
+              "valueField source sourceField overwrite compression minorVersion extraDims overrideSrs threads forward prefix";
+          case FILTER -> "valueField outputValueField expression invertFilter where";
+          case RANGE -> "valueField outputValueField limits where";
+          case CALCULATOR -> "valueField outputValueField assignmentKind assignment condition where";
+          case CLASSIFICATION -> "valueField outputValueField classification onlyUnclassified where";
+          case THIN ->
+              "valueField outputValueField thinType step voxelCell voxelMode gridCell sampleRadius fpsCount where";
+          case OUTLIER -> "valueField outputValueField outlierType meanK multiplier radius minK where";
+          case SORT -> "valueField outputValueField mortonOrder mortonReverse sortDimensions sortDescending where";
+          case TRANSFORM -> "valueField outputValueField matrix where";
+          case GROUND ->
+              "valueField outputValueField groundType scalar slope threshold window groundCell pmfCellSize initialDistance maxWindowSize csfResolution csfRigidness computeHag hagType hagDemFile hagCount hagMaxDistance where";
+          case RAW -> "valueField outputValueField rawMode rawPipeline";
+          case MERGER -> "valueField outputValueField groupField batchSize prefix";
         };
 
     try {
@@ -72,13 +86,10 @@ public final class PdalValueDialog extends BaseTransformDialog {
           var button = new Button(body, SWT.CHECK);
           button.setSelection(field.getBoolean(input));
           control = button;
-        } else if (name.equals("valueField")
-            || name.equals("outputValueField")
-            || name.equals("infoFields")
-            || name.equals("prefix")) {
+        } else if (isCombo(name)) {
           var combo = new ComboVar(variables, body, SWT.BORDER);
-          String[] choices = new String[0];
-          if (!name.equals("infoFields")) {
+          String[] choices = explicitChoices(name);
+          if (choices.length == 0) {
             try {
               choices =
                   pipelineMeta.getPrevTransformFields(variables, transformName).getFieldNames();
@@ -165,6 +176,41 @@ public final class PdalValueDialog extends BaseTransformDialog {
       if (!display.readAndDispatch()) display.sleep();
     }
     return transformName;
+  }
+
+  private static boolean isCombo(String name) {
+    return switch (name) {
+      case "valueField",
+              "outputValueField",
+              "infoFields",
+              "prefix",
+              "assignmentKind",
+              "thinType",
+              "outlierType",
+              "groundType",
+              "hagType",
+              "rawMode",
+              "driver",
+              "voxelMode",
+              "groupField" -> true;
+      default -> false;
+    };
+  }
+
+  private static String[] explicitChoices(String name) {
+    return switch (name) {
+      case "assignmentKind" -> new String[] {"VALUE", "ASSIGNMENT"};
+      case "thinType" ->
+          new String[] {"DECIMATION", "VOXEL_DOWNSIZE", "GRID_DECIMATION", "SAMPLE", "FPS"};
+      case "outlierType" -> new String[] {"STATISTICAL", "RADIUS"};
+      case "groundType" -> new String[] {"SMRF", "PMF", "CSF"};
+      case "hagType" -> new String[] {"NN", "DELAUNAY", "DEM"};
+      case "rawMode" -> new String[] {"APPEND", "REPLACE"};
+      case "voxelMode" -> new String[] {"first", "center", "centroid"};
+      case "driver" ->
+          new String[] {"", "las", "copc", "ept", "bpf", "ply", "text", "gdal", "pcd", "e57"};
+      default -> new String[0];
+    };
   }
 
   private static String label(String name) {

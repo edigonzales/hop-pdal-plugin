@@ -1,0 +1,103 @@
+<pipeline>
+  <info>
+    <name>Merge tiles into one COPC</name>
+    <pipeline_type>Normal</pipeline_type>
+    <parameters>
+      <parameter>
+        <name>INPUT_FILE_1</name>
+        <default_value></default_value>
+        <description>First LAS/LAZ or COPC source</description>
+      </parameter>
+      <parameter>
+        <name>INPUT_FILE_2</name>
+        <default_value></default_value>
+        <description>Second LAS/LAZ or COPC source</description>
+      </parameter>
+      <parameter>
+        <name>OUTPUT_FILE</name>
+        <default_value></default_value>
+        <description>Merged COPC output file, for example merged.copc.laz</description>
+      </parameter>
+    </parameters>
+  </info>
+  <order>
+    <hop>
+      <from>Read first tile</from>
+      <to>Merge point clouds</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>Read second tile</from>
+      <to>Merge point clouds</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>Merge point clouds</from>
+      <to>Write point cloud</to>
+      <enabled>Y</enabled>
+    </hop>
+  </order>
+  <transform>
+    <name>Read first tile</name>
+    <type>SOGIS_POINTCLOUD_READER</type>
+    <copies>1</copies>
+    <distribute>Y</distribute>
+    <version>1</version>
+    <valueField>pointcloud</valueField>
+    <source>${INPUT_FILE_1}</source>
+    <sourceField>N</sourceField>
+    <GUI>
+      <xloc>120</xloc>
+      <yloc>120</yloc>
+      <draw>Y</draw>
+    </GUI>
+  </transform>
+  <transform>
+    <name>Read second tile</name>
+    <type>SOGIS_POINTCLOUD_READER</type>
+    <copies>1</copies>
+    <distribute>Y</distribute>
+    <version>1</version>
+    <valueField>pointcloud</valueField>
+    <source>${INPUT_FILE_2}</source>
+    <sourceField>N</sourceField>
+    <GUI>
+      <xloc>120</xloc>
+      <yloc>120</yloc>
+      <draw>Y</draw>
+    </GUI>
+  </transform>
+  <transform>
+    <name>Merge point clouds</name>
+    <type>SOGIS_POINTCLOUD_MERGER</type>
+    <copies>1</copies>
+    <distribute>Y</distribute>
+    <version>1</version>
+    <valueField>pointcloud</valueField>
+    <outputValueField>merged</outputValueField>
+    <GUI>
+      <xloc>620</xloc>
+      <yloc>120</yloc>
+      <draw>Y</draw>
+    </GUI>
+  </transform>
+  <transform>
+    <name>Write point cloud</name>
+    <type>SOGIS_POINTCLOUD_WRITER</type>
+    <copies>1</copies>
+    <distribute>Y</distribute>
+    <version>1</version>
+    <valueField>merged</valueField>
+    <source>${OUTPUT_FILE}</source>
+    <sourceField>N</sourceField>
+    <overwrite>Y</overwrite>
+    <prefix>pointcloud_</prefix>
+    <GUI>
+      <xloc>860</xloc>
+      <yloc>120</yloc>
+      <draw>Y</draw>
+    </GUI>
+  </transform>
+  <transform_error_handling />
+  <attributes />
+</pipeline>

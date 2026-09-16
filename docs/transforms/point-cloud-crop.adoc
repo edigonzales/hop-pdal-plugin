@@ -19,6 +19,11 @@ source bounds and the crop region, and the point count is marked as unknown unti
 Multiple crops, reprojections and further filter transforms can be chained before the writer
 executes the accumulated pipeline exactly once.
 
+For remote COPC and EPT sources the crop bounds are also pushed into the reader stage
+(`bounds` option). The reader then requests only the octree nodes that intersect the crop, so a
+small extract from a large public point cloud transfers a small fraction of the file. The exact
+clip remains the following crop stage.
+
 == Input
 
 A field with the Hop type `Point Cloud`, usually produced by the Point Cloud Reader.

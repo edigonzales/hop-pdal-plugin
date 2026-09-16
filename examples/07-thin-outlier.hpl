@@ -1,0 +1,130 @@
+<pipeline>
+  <info>
+    <name>Outlier removal and voxel thinning</name>
+    <pipeline_type>Normal</pipeline_type>
+    <parameters>
+      <parameter>
+        <name>INPUT_FILE</name>
+        <default_value></default_value>
+        <description>LAS/LAZ, COPC, EPT, BPF or text source</description>
+      </parameter>
+      <parameter>
+        <name>OUTPUT_FILE</name>
+        <default_value></default_value>
+        <description>Output LAS/LAZ, COPC, BPF or text file</description>
+      </parameter>
+    </parameters>
+  </info>
+  <order>
+    <hop>
+      <from>One row</from>
+      <to>Read point cloud</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>Read point cloud</from>
+      <to>Remove outliers</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>Remove outliers</from>
+      <to>Voxel downsize</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>Voxel downsize</from>
+      <to>Write point cloud</to>
+      <enabled>Y</enabled>
+    </hop>
+  </order>
+  <transform>
+    <name>One row</name>
+    <type>RowGenerator</type>
+    <copies>1</copies>
+    <distribute>Y</distribute>
+    <limit>1</limit>
+    <never_ending>N</never_ending>
+    <fields>
+      <field>
+        <name>id</name>
+        <type>Integer</type>
+        <nullif>1</nullif>
+        <length>-1</length>
+        <precision>-1</precision>
+      </field>
+    </fields>
+    <GUI>
+      <xloc>120</xloc>
+      <yloc>120</yloc>
+      <draw>Y</draw>
+    </GUI>
+  </transform>
+  <transform>
+    <name>Read point cloud</name>
+    <type>SOGIS_POINTCLOUD_READER</type>
+    <copies>1</copies>
+    <distribute>Y</distribute>
+    <version>1</version>
+    <valueField>pointcloud</valueField>
+    <source>${INPUT_FILE}</source>
+    <sourceField>N</sourceField>
+    <GUI>
+      <xloc>340</xloc>
+      <yloc>120</yloc>
+      <draw>Y</draw>
+    </GUI>
+  </transform>
+  <transform>
+    <name>Remove outliers</name>
+    <type>SOGIS_POINTCLOUD_OUTLIER</type>
+    <copies>1</copies>
+    <distribute>Y</distribute>
+    <version>1</version>
+    <valueField>pointcloud</valueField>
+    <outputValueField>clean</outputValueField>
+    <outlierType>STATISTICAL</outlierType>
+    <meanK>8</meanK>
+    <multiplier>2.0</multiplier>
+    <GUI>
+      <xloc>560</xloc>
+      <yloc>120</yloc>
+      <draw>Y</draw>
+    </GUI>
+  </transform>
+  <transform>
+    <name>Voxel downsize</name>
+    <type>SOGIS_POINTCLOUD_THIN</type>
+    <copies>1</copies>
+    <distribute>Y</distribute>
+    <version>1</version>
+    <valueField>clean</valueField>
+    <outputValueField>thinned</outputValueField>
+    <thinType>VOXEL_DOWNSIZE</thinType>
+    <voxelCell>2.0</voxelCell>
+    <voxelMode>center</voxelMode>
+    <GUI>
+      <xloc>780</xloc>
+      <yloc>120</yloc>
+      <draw>Y</draw>
+    </GUI>
+  </transform>
+  <transform>
+    <name>Write point cloud</name>
+    <type>SOGIS_POINTCLOUD_WRITER</type>
+    <copies>1</copies>
+    <distribute>Y</distribute>
+    <version>1</version>
+    <valueField>thinned</valueField>
+    <source>${OUTPUT_FILE}</source>
+    <sourceField>N</sourceField>
+    <overwrite>Y</overwrite>
+    <prefix>pointcloud_</prefix>
+    <GUI>
+      <xloc>1100</xloc>
+      <yloc>120</yloc>
+      <draw>Y</draw>
+    </GUI>
+  </transform>
+  <transform_error_handling />
+  <attributes />
+</pipeline>

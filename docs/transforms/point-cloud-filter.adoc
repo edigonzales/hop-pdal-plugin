@@ -1,0 +1,63 @@
+[[point-cloud-filter]]
+= Point Cloud Filter
+:plugin-id: SOGIS_POINTCLOUD_FILTER
+:plugin-type: transform
+:description: Keep points matching an expression or a dimension range
+
+The Point Cloud Filter keeps the points of interest. The filter is appended to the pipeline plan and executed by the Point Cloud Writer.
+
+== Description
+
+Keep points matching an expression or a dimension range
+
+== Input
+
+A field with the Hop type `Point Cloud`, usually produced by the Point Cloud Reader.
+
+== Options
+
+[cols="1,3,1",options="header"]
+|===
+|Option |Description |Default
+
+|Point Cloud field
+|Name of the input field.
+|`pointcloud`
+
+|Output field
+|Optional new value field; empty updates the input field in place.
+|(empty)
+
+|Expression
+|PDAL expression, for example `Classification == 2 && Z > 500`.
+|(empty)
+
+|Invert
+|Keep the points that do not match the expression.
+|`N`
+
+|Condition
+|Optional `where` expression that limits the filter to a subset of points.
+|(empty)
+|===
+
+== Output
+
+The Point Cloud value with the appended `filters.expression` stage. The planned point count becomes unknown.
+
+== Supported engines
+
+Planning only: this transform appends a stage to the pipeline plan and runs on the Hop local engine
+without native access. The plan is executed by the Point Cloud Writer in a single PDAL call.
+
+== Examples
+
+* `examples/05-filter-calculator.hpl` filters ground points of a source.
+
+== Error handling
+
+Enable error handling to route rows with invalid settings or missing values to an error transform.
+
+== Limitations
+
+Only expressions of the PDAL expression language are supported. Use the Point Cloud Range transform for simple dimension ranges.

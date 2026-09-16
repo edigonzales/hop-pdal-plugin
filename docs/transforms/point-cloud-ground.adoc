@@ -1,0 +1,115 @@
+[[point-cloud-ground]]
+= Point Cloud Ground
+:plugin-id: SOGIS_POINTCLOUD_GROUND
+:plugin-type: transform
+:description: Classify ground with SMRF, PMF or CSF and optionally compute height above ground
+
+The Point Cloud Ground transform classifies the ground points and can compute the height above ground in the same step, which is the standard lidar workflow `ground filter → height above ground`.
+
+== Description
+
+Classify ground with SMRF, PMF or CSF and optionally compute height above ground
+
+== Input
+
+A field with the Hop type `Point Cloud`, usually produced by the Point Cloud Reader.
+
+== Options
+
+[cols="1,3,1",options="header"]
+|===
+|Option |Description |Default
+
+|Point Cloud field
+|Name of the input field.
+|`pointcloud`
+
+|Output field
+|Optional new value field; empty updates the input field in place.
+|(empty)
+
+|Algorithm
+|`SMRF`, `PMF` or `CSF`.
+|`SMRF`
+
+|Scalar
+|Elevation scalar (SMRF, PMF).
+|`1.25`
+
+|Slope
+|Slope parameter (SMRF, PMF).
+|`0.15`
+
+|Threshold
+|Elevation threshold (SMRF, CSF).
+|`0.5`
+
+|Window
+|Maximum window size in cells (SMRF).
+|`18`
+
+|Cell
+|Optional cell size (SMRF).
+|(empty)
+
+|PMF cell size
+|Cell size (PMF).
+|`1.0`
+
+|Initial distance
+|Initial distance (PMF).
+|`0.15`
+
+|Max window size
+|Maximum window size (PMF).
+|`33`
+
+|CSF resolution
+|Cloth resolution (CSF).
+|`1.0`
+
+|CSF rigidness
+|Cloth rigidness (CSF).
+|`1`
+
+|Compute HAG
+|Append a height above ground filter and add the `HeightAboveGround` dimension.
+|`N`
+
+|HAG algorithm
+|`NN`, `DELAUNAY` or `DEM`.
+|`NN`
+
+|HAG DEM file
+|Raster DEM for the `DEM` algorithm.
+|(empty)
+
+|HAG count
+|Optional neighbour count (NN, Delaunay).
+|(empty)
+
+|HAG max distance
+|Optional maximum search distance (NN).
+|(empty)
+|===
+
+== Output
+
+The Point Cloud value with the appended ground filter stage and, when enabled, the height above ground stage. The `HeightAboveGround` dimension is added to the planned schema.
+
+== Supported engines
+
+Planning only: this transform appends a stage to the pipeline plan and runs on the Hop local engine
+without native access. The plan is executed by the Point Cloud Writer in a single PDAL call.
+
+== Examples
+
+* `examples/09-ground-hag.hpl` classifies ground and computes the height above ground.
+
+== Error handling
+
+Enable error handling to route rows with invalid settings or missing values to an error transform.
+
+== Limitations
+
+Ground classification needs enough RAM for the point cloud. The `HeightAboveGround` dimension is only written when the writer forwards it (set *Extra dimensions* to `all` or to `HeightAboveGround=float`) - see `examples/09-ground-hag.hpl`.
