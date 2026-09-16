@@ -276,11 +276,14 @@ public final class PdalValueTransform extends BaseTransform<PdalValueMeta, PdalV
         }
 
         List<String> dimensions = PdalValueMeta.tokens(text(meta.getRowDimensions()));
+        List<String> integerDimensions = PdalValueMeta.tokens(text(meta.getIntegerDimensions()));
         for (int point = 0; point < data.blockReader.blockLength(); point++) {
           Object[] out = RowDataUtil.resizeArray(data.pointCloudRow, data.outputMeta.size());
           for (int dimension = 0; dimension < dimensions.size(); dimension++) {
+            Object raw = data.blockReader.value(dimension, point);
+            boolean integer = integerDimensions.contains(dimensions.get(dimension));
             out[index(meta.getPrefix() + dimensions.get(dimension))] =
-                data.blockReader.value(dimension, point);
+                integer ? (Object) ((Number) raw).longValue() : (Object) ((Number) raw).doubleValue();
           }
           putRow(data.outputMeta, out);
         }

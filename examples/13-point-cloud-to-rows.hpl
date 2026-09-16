@@ -67,6 +67,7 @@
     <version>1</version>
     <valueField>pointcloud</valueField>
     <rowDimensions>X,Y,Z,Classification</rowDimensions>
+    <integerDimensions>Classification</integerDimensions>
     <maxPoints>10000000</maxPoints>
     <GUI>
       <xloc>560</xloc>

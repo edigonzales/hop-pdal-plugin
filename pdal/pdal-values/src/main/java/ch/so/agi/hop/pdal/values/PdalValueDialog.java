@@ -74,7 +74,7 @@ public final class PdalValueDialog extends BaseTransformDialog {
           case RAW -> "valueField outputValueField rawMode rawPipeline";
           case STATISTICS ->
               "valueField outputValueField statsDimensions statsFields prefix";
-          case TO_ROWS -> "valueField rowDimensions prefix maxPoints";
+          case TO_ROWS -> "valueField rowDimensions integerDimensions prefix maxPoints";
           case MERGER -> "valueField outputValueField groupField batchSize prefix";
         };
 

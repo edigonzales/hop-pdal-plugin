@@ -804,6 +804,16 @@ public abstract class PdalValueMeta extends BaseTransformMeta<PdalValueTransform
     rowDimensions = value;
   }
 
+  @HopMetadataProperty private String integerDimensions = "";
+
+  public String getIntegerDimensions() {
+    return integerDimensions;
+  }
+
+  public void setIntegerDimensions(String value) {
+    integerDimensions = value;
+  }
+
   @HopMetadataProperty private String maxPoints = "";
 
   public String getMaxPoints() {
@@ -1004,9 +1014,13 @@ public abstract class PdalValueMeta extends BaseTransformMeta<PdalValueTransform
       add(row, origin, new ValueMetaString(vars.resolve(prefix) + "output_file"));
       add(row, origin, new ValueMetaString(vars.resolve(prefix) + "status"));
     } else if (op.equals("TO_ROWS")) {
+      List<String> integer = tokens(integerDimensions);
       for (String dimension : tokens(rowDimensions)) {
         String name = vars.resolve(prefix) + dimension;
-        add(row, origin, new ValueMetaNumber(name));
+        add(
+            row,
+            origin,
+            integer.contains(dimension) ? new ValueMetaInteger(name) : new ValueMetaNumber(name));
       }
     } else if (op.equals("STATISTICS")) {
       add(row, origin, new ValueMetaInteger(vars.resolve(prefix) + "point_count"));

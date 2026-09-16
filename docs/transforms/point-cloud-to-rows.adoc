@@ -41,6 +41,11 @@ crop, filter or ground transforms.
 |Comma separated dimensions to emit as fields (for example `X,Y,Z,Classification`).
 |(empty)
 
+|Integer dimensions
+|Comma separated dimensions that are emitted as Integer (for example `Classification,Intensity`);
+all other dimensions are emitted as Number.
+|(empty)
+
 |Field prefix
 |Prefix of the emitted dimension fields.
 |(empty)
