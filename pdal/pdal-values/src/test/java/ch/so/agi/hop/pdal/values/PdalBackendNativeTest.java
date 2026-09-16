@@ -182,6 +182,47 @@ class PdalBackendNativeTest {
     assertThat(copc.bounds().maxX()).isBetween(1999.0, 2000.0);
   }
 
+  @Test
+  void computesDimensionStatistics(@TempDir Path tempDir) throws Exception {
+    Path input = tempDir.resolve("stats-input.laz");
+    Pdal.execute(
+        """
+        {"pipeline":[
+          {"type":"readers.faux","mode":"ramp","bounds":"([0,100],[0,100],[0,10])","count":2000},
+          {"type":"writers.las","filename":"%s"}]}
+        """
+            .formatted(jsonPath(input)));
+
+    PdalBackend backend = new PdalBackend();
+    PointCloudDataset dataset =
+        PointCloudDataset.of(
+            new PointCloudReference(input.toString(), null),
+            backend.describe(input.toString()),
+            PdalPlan.of(PdalStage.of("readers.las", Map.of("filename", input.toString()))));
+
+    PdalPlan basic =
+        dataset.plan().append(PdalOperationStages.statistics(List.of("X", "Y", "Z"), false));
+    PointCloudExecution execution = backend.execute(basic, null);
+    assertThat(execution.pointCount()).isEqualTo(2000);
+
+    Map<String, Map<String, Double>> statistics = PdalStatistics.parse(execution.metadataJson());
+    assertThat(statistics.get("X"))
+        .containsEntry("count", 2000.0)
+        .containsEntry("minimum", 0.0)
+        .containsEntry("maximum", 100.0)
+        .containsEntry("average", 50.0);
+    assertThat(statistics.get("Z")).containsEntry("average", 5.0);
+    assertThat(statistics.get("Z")).doesNotContainKey("skewness");
+
+    PdalPlan advanced =
+        dataset
+            .plan()
+            .append(PdalOperationStages.statistics(List.of("Z"), true));
+    Map<String, Map<String, Double>> advancedStatistics =
+        PdalStatistics.parse(backend.execute(advanced, null).metadataJson());
+    assertThat(advancedStatistics.get("Z")).containsKeys("skewness", "kurtosis");
+  }
+
   private static String jsonPath(Path path) {
     return path.toString().replace("\\", "\\\\");
   }

@@ -42,6 +42,9 @@ public final class PdalValueTransform extends BaseTransform<PdalValueMeta, PdalV
     if (meta.operation() == PdalValueMeta.Operation.MERGER) {
       return processMergerRow();
     }
+    if (meta.operation() == PdalValueMeta.Operation.TO_ROWS) {
+      return processToRowsRow();
+    }
 
     boolean standalone =
         meta.operation() == PdalValueMeta.Operation.READER
@@ -180,6 +183,10 @@ public final class PdalValueTransform extends BaseTransform<PdalValueMeta, PdalV
           dataset = dataset(row);
           result[index(meta.resultField(this))] = ground(dataset);
         }
+        case STATISTICS -> {
+          dataset = dataset(row);
+          fillStatistics(result, dataset);
+        }
         case RAW -> {
           dataset = dataset(row);
           PdalPlan raw = PdalOperationStages.raw(text(meta.getRawPipeline()), text(meta.getRawMode()));
@@ -222,6 +229,98 @@ public final class PdalValueTransform extends BaseTransform<PdalValueMeta, PdalV
       }
     }
     return true;
+  }
+
+  // ----- point to rows -----
+
+  private boolean processToRowsRow() throws HopException {
+    while (true) {
+      if (isStopped()) {
+        closeBlockReader();
+        return false;
+      }
+      try {
+        if (data.blockReader == null) {
+          Object[] inputRow = getRow();
+          if (inputRow == null) {
+            setOutputDone();
+            return false;
+          }
+          data.inputMeta = getInputRowMeta();
+          data.outputMeta = data.inputMeta.clone();
+          meta.getFields(data.outputMeta, getTransformName(), null, null, this, null);
+          PointCloudDataset dataset = dataset(inputRow);
+          PdalBlockReader reader =
+              PdalBlockReader.open(
+                  dataset.plan(),
+                  PdalValueMeta.tokens(text(meta.getRowDimensions())),
+                  PdalBlockReader.DEFAULT_BLOCK_SIZE);
+          int maxPoints = maxPoints();
+          if (maxPoints > 0 && reader.pointCount() > maxPoints) {
+            reader.close();
+            throw new IllegalArgumentException(
+                "Point cloud has "
+                    + reader.pointCount()
+                    + " points; the limit is "
+                    + maxPoints
+                    + ". Thin or filter the point cloud first.");
+          }
+          data.blockReader = reader;
+          data.pointCloudRow = inputRow;
+          logBasic("Reading " + reader.pointCount() + " point(s) as rows");
+        }
+
+        if (!data.blockReader.readBlock()) {
+          closeBlockReader();
+          continue;
+        }
+
+        List<String> dimensions = PdalValueMeta.tokens(text(meta.getRowDimensions()));
+        for (int point = 0; point < data.blockReader.blockLength(); point++) {
+          Object[] out = RowDataUtil.resizeArray(data.pointCloudRow, data.outputMeta.size());
+          for (int dimension = 0; dimension < dimensions.size(); dimension++) {
+            out[index(meta.getPrefix() + dimensions.get(dimension))] =
+                data.blockReader.value(dimension, point);
+          }
+          putRow(data.outputMeta, out);
+        }
+        return true;
+      } catch (Exception e) {
+        closeBlockReader();
+        if (isStopped()) {
+          return false;
+        }
+        String message = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
+        var error = getTransformMeta().getTransformErrorMeta();
+        if (getTransformMeta().isDoingErrorHandling() || (error != null && error.isEnabled())) {
+          putError(
+              data.inputMeta, data.pointCloudRow, 1L, message, meta.getValueField(),
+              "POINTCLOUD_TO_ROWS_ERROR");
+          return true;
+        }
+        throw new HopTransformException(message, e);
+      }
+    }
+  }
+
+  private int maxPoints() {
+    String value = text(meta.getMaxPoints());
+    if (value.isEmpty()) {
+      return 0;
+    }
+    int max = Integer.parseInt(value);
+    if (max < 0) {
+      throw new IllegalArgumentException("Maximum points must not be negative");
+    }
+    return max;
+  }
+
+  private void closeBlockReader() {
+    if (data.blockReader != null) {
+      data.blockReader.close();
+      data.blockReader = null;
+      data.pointCloudRow = null;
+    }
   }
 
   // ----- merger -----
@@ -583,6 +682,47 @@ public final class PdalValueTransform extends BaseTransform<PdalValueMeta, PdalV
             ? dataset.descriptor().withCrs(null, crs)
             : dataset.descriptor().withCrs(crs, null);
     return dataset.append(PdalStage.of("filters.reprojection", Map.of("out_srs", crs)), descriptor);
+  }
+
+  private void fillStatistics(Object[] result, PointCloudDataset dataset) throws Exception {
+    List<String> dimensions = PdalValueMeta.tokens(text(meta.getStatsDimensions()));
+    List<String> selected = meta.selectedStatistics();
+    if (dimensions.isEmpty()) {
+      throw new IllegalArgumentException("Statistics dimensions are required");
+    }
+
+    PdalPlan plan =
+        dataset
+            .plan()
+            .append(PdalOperationStages.statistics(dimensions, PdalStatistics.requiresAdvanced(selected)));
+    PointCloudExecution execution = data.backend.execute(plan, this::isStopped);
+    Map<String, Map<String, Double>> statistics =
+        PdalStatistics.parse(execution.metadataJson());
+
+    result[index(meta.getPrefix() + "point_count")] = execution.pointCount();
+    for (String dimension : dimensions) {
+      Map<String, Double> values = statistics.get(dimension);
+      for (String statistic : selected) {
+        Object value = null;
+        if (values != null) {
+          Double found = values.get(PdalStatistics.metadataKey(statistic));
+          if (found != null) {
+            value = statistic.equals("count") ? (Object) found.longValue() : found;
+          }
+        }
+        if (value == null && statistic.equals("count")) {
+          // Fall back to the executed point count when the dimension is unknown.
+          value = execution.pointCount();
+        }
+        result[index(meta.getPrefix() + statistic + "_" + dimension)] = value;
+      }
+    }
+    logBasic(
+        "Statistics computed for "
+            + dimensions.size()
+            + " dimension(s) over "
+            + execution.pointCount()
+            + " point(s); the pipeline is executed again by the writer.");
   }
 
   private PointCloudDataset ground(PointCloudDataset dataset) throws Exception {

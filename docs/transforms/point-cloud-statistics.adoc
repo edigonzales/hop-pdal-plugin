@@ -1,0 +1,73 @@
+[[point-cloud-statistics]]
+= Point Cloud Statistics
+:plugin-id: SOGIS_POINTCLOUD_STATISTICS
+:plugin-type: transform
+:description: Compute per dimension statistics (count, min, max, mean, stddev, variance, skewness, kurtosis)
+
+The Point Cloud Statistics transform executes the planned pipeline once and adds the statistics of
+the selected dimensions as fields.
+
+== Description
+
+Statistics need the actual points, so this transform executes the current pipeline plan
+(`filters.stats`) and parses the PDAL metadata. The Point Cloud value itself is passed through
+unchanged; the following Point Cloud Writer executes the plan again. Use the transform in a branch
+(for example with a `Tee` transform) or at the end of a pipeline when the double execution matters.
+
+Fields are named `<prefix><statistic>_<dimension>`, for example `stats_min_Z` or
+`stats_count_X`. The executed point count is available as `<prefix>point_count`.
+
+== Input
+
+A field with the Hop type `Point Cloud`, usually produced by the Point Cloud Reader.
+
+== Options
+
+[cols="1,3,1",options="header"]
+|===
+|Option |Description |Default
+
+|Point Cloud field
+|Name of the input field.
+|`pointcloud`
+
+|Output field
+|Optional new value field; empty updates the input field in place.
+|(empty)
+
+|Dimensions
+|Comma separated dimensions to compute statistics for.
+|(empty)
+
+|Statistics
+|Comma separated statistics: `count`, `min`, `max`, `mean`, `stddev`, `variance`, `skewness`,
+`kurtosis`. `skewness` and `kurtosis` enable the advanced statistics of PDAL.
+|`count,min,max,mean,stddev,variance`
+
+|Field prefix
+|Prefix of the statistics fields.
+|(empty)
+|===
+
+== Output
+
+The input row plus one field per selected dimension and statistic, plus `<prefix>point_count`.
+
+== Supported engines
+
+This transform executes the bundled PDAL runtime and runs on the Hop local engine with native
+access. The pipeline is executed here and again by the Point Cloud Writer.
+
+== Examples
+
+* `examples/12-statistics.hpl` computes statistics for X, Y, Z and Intensity.
+
+== Error handling
+
+Enable error handling to route rows with unknown dimensions or invalid statistics to an error
+transform.
+
+== Limitations
+
+Unknown dimensions are ignored by PDAL (the count falls back to the executed point count). All
+points pass through native memory; very large point clouds need corresponding RAM.

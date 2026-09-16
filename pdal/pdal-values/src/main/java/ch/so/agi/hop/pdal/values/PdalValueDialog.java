@@ -72,6 +72,9 @@ public final class PdalValueDialog extends BaseTransformDialog {
           case GROUND ->
               "valueField outputValueField groundType scalar slope threshold window groundCell pmfCellSize initialDistance maxWindowSize csfResolution csfRigidness computeHag hagType hagDemFile hagCount hagMaxDistance where";
           case RAW -> "valueField outputValueField rawMode rawPipeline";
+          case STATISTICS ->
+              "valueField outputValueField statsDimensions statsFields prefix";
+          case TO_ROWS -> "valueField rowDimensions prefix maxPoints";
           case MERGER -> "valueField outputValueField groupField batchSize prefix";
         };
 

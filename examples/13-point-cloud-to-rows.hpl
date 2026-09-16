@@ -1,0 +1,79 @@
+<pipeline>
+  <info>
+    <name>Point cloud to rows</name>
+    <pipeline_type>Normal</pipeline_type>
+    <parameters>
+      <parameter>
+        <name>INPUT_FILE</name>
+        <default_value />
+        <description>LAS/LAZ, COPC, EPT, BPF or text source</description>
+      </parameter>
+    </parameters>
+  </info>
+  <order>
+    <hop>
+      <from>One row</from>
+      <to>Read point cloud</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>Read point cloud</from>
+      <to>Point cloud to rows</to>
+      <enabled>Y</enabled>
+    </hop>
+  </order>
+  <transform>
+    <name>One row</name>
+    <type>RowGenerator</type>
+    <copies>1</copies>
+    <distribute>Y</distribute>
+    <limit>1</limit>
+    <never_ending>N</never_ending>
+    <fields>
+      <field>
+        <name>id</name>
+        <type>Integer</type>
+        <nullif>1</nullif>
+        <length>-1</length>
+        <precision>-1</precision>
+      </field>
+    </fields>
+    <GUI>
+      <xloc>120</xloc>
+      <yloc>120</yloc>
+      <draw>Y</draw>
+    </GUI>
+  </transform>
+  <transform>
+    <name>Read point cloud</name>
+    <type>SOGIS_POINTCLOUD_READER</type>
+    <copies>1</copies>
+    <distribute>Y</distribute>
+    <version>1</version>
+    <valueField>pointcloud</valueField>
+    <source>${INPUT_FILE}</source>
+    <sourceField>N</sourceField>
+    <GUI>
+      <xloc>340</xloc>
+      <yloc>120</yloc>
+      <draw>Y</draw>
+    </GUI>
+  </transform>
+  <transform>
+    <name>Point cloud to rows</name>
+    <type>SOGIS_POINTCLOUD_TO_ROWS</type>
+    <copies>1</copies>
+    <distribute>Y</distribute>
+    <version>1</version>
+    <valueField>pointcloud</valueField>
+    <rowDimensions>X,Y,Z,Classification</rowDimensions>
+    <maxPoints>10000000</maxPoints>
+    <GUI>
+      <xloc>560</xloc>
+      <yloc>120</yloc>
+      <draw>Y</draw>
+    </GUI>
+  </transform>
+  <transform_error_handling />
+  <attributes />
+</pipeline>

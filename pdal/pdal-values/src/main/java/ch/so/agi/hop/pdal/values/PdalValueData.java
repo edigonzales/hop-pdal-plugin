@@ -13,6 +13,10 @@ public final class PdalValueData extends BaseTransformData {
   public final PdalBackend backend = new PdalBackend();
   public boolean emitted;
 
+  /** Point-to-rows state: the open block reader and the current input row. */
+  public PdalBlockReader blockReader;
+  public Object[] pointCloudRow;
+
   /** Aggregation state of the merger transform, keyed by the group value. */
   public final Map<String, MergedGroup> mergedGroups = new LinkedHashMap<>();
 

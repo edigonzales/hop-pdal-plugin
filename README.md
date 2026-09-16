@@ -29,6 +29,8 @@ group with the Point Cloud Type plugin.
 | Point Cloud Reproject | Plan a CRS transformation. |
 | Point Cloud Raw Pipeline | Append or replace raw PDAL stage JSON (expert mode). |
 | Point Cloud Merger | Merge many unprocessed point clouds into one plan (for example many tiles into one COPC). |
+| Point Cloud Statistics | Execute the pipeline and add per dimension statistics (count, min, max, mean, stddev, variance, skewness, kurtosis). |
+| Point Cloud to Rows | Execute the pipeline and emit one Hop row per point with block-wise dimension reads. |
 | Point Cloud Writer | Execute the planned pipeline **once** and write the result to a file. |
 
 Planning and execution are separated: reader, info, filters, ground classification and the merger
@@ -128,7 +130,5 @@ published to a Maven repository.
 
 ## Roadmap
 
-- Point Cloud Statistics (`filters.stats`) with per dimension fields
-- Point cloud block access (`PointBlock`) and point-to-row coercion
 - Merging with per-source filters (DAG plans) and multiple writers
 - Publishing `pdal-ffm-*` and the plugins to `jars.interlis.guru` (removes the local build step)

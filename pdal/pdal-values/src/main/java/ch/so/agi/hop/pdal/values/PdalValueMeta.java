@@ -43,7 +43,9 @@ public abstract class PdalValueMeta extends BaseTransformMeta<PdalValueTransform
     TRANSFORM,
     GROUND,
     RAW,
-    MERGER
+    STATISTICS,
+    MERGER,
+    TO_ROWS
   }
 
   public abstract Operation operation();
@@ -742,6 +744,32 @@ public abstract class PdalValueMeta extends BaseTransformMeta<PdalValueTransform
     hagMaxDistance = value;
   }
 
+  // ----- statistics -----
+
+  @HopMetadataProperty private String statsDimensions = "";
+
+  public String getStatsDimensions() {
+    return statsDimensions;
+  }
+
+  public void setStatsDimensions(String value) {
+    statsDimensions = value;
+  }
+
+  @HopMetadataProperty private String statsFields = "count,min,max,mean,stddev,variance";
+
+  public String getStatsFields() {
+    return statsFields;
+  }
+
+  public void setStatsFields(String value) {
+    statsFields = value;
+  }
+
+  public List<String> selectedStatistics() {
+    return tokens(statsFields).stream().map(field -> field.toLowerCase(Locale.ROOT)).toList();
+  }
+
   // ----- raw -----
 
   @HopMetadataProperty private String rawMode = "APPEND";
@@ -762,6 +790,28 @@ public abstract class PdalValueMeta extends BaseTransformMeta<PdalValueTransform
 
   public void setRawPipeline(String value) {
     rawPipeline = value;
+  }
+
+  // ----- point to rows -----
+
+  @HopMetadataProperty private String rowDimensions = "";
+
+  public String getRowDimensions() {
+    return rowDimensions;
+  }
+
+  public void setRowDimensions(String value) {
+    rowDimensions = value;
+  }
+
+  @HopMetadataProperty private String maxPoints = "";
+
+  public String getMaxPoints() {
+    return maxPoints;
+  }
+
+  public void setMaxPoints(String value) {
+    maxPoints = value;
   }
 
   // ----- merger -----
@@ -866,6 +916,19 @@ public abstract class PdalValueMeta extends BaseTransformMeta<PdalValueTransform
     if (op.equals("RAW") && (rawPipeline == null || rawPipeline.isBlank())) {
       throw new IllegalArgumentException("Raw pipeline JSON is required");
     }
+    if (op.equals("TO_ROWS") && tokens(rowDimensions).isEmpty()) {
+      throw new IllegalArgumentException("Point dimensions are required");
+    }
+    if (op.equals("STATISTICS")) {
+      if (tokens(statsDimensions).isEmpty()) {
+        throw new IllegalArgumentException("Statistics dimensions are required");
+      }
+      for (String statistic : selectedStatistics()) {
+        if (!PdalStatistics.SUPPORTED_STATISTICS.contains(statistic)) {
+          throw new IllegalArgumentException("Unsupported statistic: " + statistic);
+        }
+      }
+    }
   }
 
   /** Field name the transform writes the resulting value to. */
@@ -940,6 +1003,24 @@ public abstract class PdalValueMeta extends BaseTransformMeta<PdalValueTransform
     } else if (op.equals("WRITER")) {
       add(row, origin, new ValueMetaString(vars.resolve(prefix) + "output_file"));
       add(row, origin, new ValueMetaString(vars.resolve(prefix) + "status"));
+    } else if (op.equals("TO_ROWS")) {
+      for (String dimension : tokens(rowDimensions)) {
+        String name = vars.resolve(prefix) + dimension;
+        add(row, origin, new ValueMetaNumber(name));
+      }
+    } else if (op.equals("STATISTICS")) {
+      add(row, origin, new ValueMetaInteger(vars.resolve(prefix) + "point_count"));
+      for (String dimension : tokens(statsDimensions)) {
+        for (String statistic : selectedStatistics()) {
+          String name = vars.resolve(prefix) + statistic + "_" + dimension;
+          add(
+              row,
+              origin,
+              statistic.equals("count")
+                  ? new ValueMetaInteger(name)
+                  : new ValueMetaNumber(name));
+        }
+      }
     } else if (op.equals("INFO")) {
       for (String field : selectedInfoFields()) {
         String name = vars.resolve(prefix) + field;

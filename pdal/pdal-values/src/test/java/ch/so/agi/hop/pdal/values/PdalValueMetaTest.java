@@ -140,6 +140,25 @@ class PdalValueMetaTest {
   }
 
   @Test
+  void toRowsAddsDimensionFields() {
+    var row = new RowMeta();
+    row.addValueMeta(new ValueMetaPointCloud("pc"));
+
+    var meta = new PointCloudToRowsMeta();
+    meta.setValueField("pc");
+    meta.setRowDimensions("X,Y,Classification");
+    meta.setPrefix("point_");
+    meta.getFields(row, "toRows", null, null, new Variables(), null);
+
+    assertThat(row.searchValueMeta("point_X")).isNotNull();
+    assertThat(row.searchValueMeta("point_Y")).isNotNull();
+    assertThat(row.searchValueMeta("point_Classification")).isNotNull();
+
+    var invalid = new PointCloudToRowsMeta();
+    assertThatThrownBy(invalid::validateSettings).hasMessageContaining("dimensions");
+  }
+
+  @Test
   void parsesAssignedDimensions() {
     assertThat(PdalValueTransform.assignedDimensions("Foo = Z * 2"))
         .containsExactly("Foo");

@@ -207,6 +207,17 @@ public final class PdalOperationStages {
     };
   }
 
+  /** Statistics stage; the transform executes it and parses the metadata. */
+  public static PdalStage statistics(List<String> dimensions, boolean advanced) {
+    return stage(
+        "filters.stats",
+        options(
+            "dimensions",
+            String.join(",", dimensions),
+            "advanced",
+            advanced ? "true" : ""));
+  }
+
   public static PdalPlan raw(String json, String mode) {
     List<PdalStage> stages = parseRawStages(json);
     if ("REPLACE".equals(mode)) {
