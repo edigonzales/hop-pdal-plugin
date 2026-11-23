@@ -108,6 +108,8 @@ mvn -B -ntp clean verify                      # unit tests (natives skipped)
 PDAL_RUN_INTEGRATION=true mvn -B -ntp verify  # plus the native integration tests
 ```
 
+Run Maven with an SWT display, using `xvfb-run -a` on headless Linux.
+
 The build resolves `ch.so.agi:pdal-ffm-*` and `ch.so.agi:hop-pointcloud-*` from the local Maven
 repository. With unpublished snapshots, publish them first:
 

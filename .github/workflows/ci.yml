@@ -92,7 +92,13 @@ jobs:
         shell: bash
         env:
           PDAL_RUN_INTEGRATION: 'true'
-        run: mvn -B -ntp clean verify
+        shell: bash
+        run: |
+          if [[ "$RUNNER_OS" == "Linux" ]]; then
+            xvfb-run -a mvn -B -ntp clean verify
+          else
+            mvn -B -ntp clean verify
+          fi
 
       - name: Verify plugin package
         shell: bash

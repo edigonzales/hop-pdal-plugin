@@ -16,9 +16,8 @@ import java.util.function.BooleanSupplier;
  * PDAL installation is required. One instance belongs to one transform copy and is not shared
  * between threads or pipeline branches.
  */
-public final class PdalBackend implements PointCloudBackend {
+public final class PdalBackend {
 
-  @Override
   public PointCloudDescriptor describe(String location) throws Exception {
     return describe(location, PdalPipelineJson.readerType(location));
   }
@@ -47,7 +46,6 @@ public final class PdalBackend implements PointCloudBackend {
         dimensions);
   }
 
-  @Override
   public PointCloudExecution execute(PdalPlan plan, BooleanSupplier stopped) throws Exception {
     if (stopped != null && stopped.getAsBoolean()) {
       throw new IllegalStateException("Cancelled before execution");
