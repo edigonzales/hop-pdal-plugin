@@ -92,7 +92,6 @@ jobs:
         shell: bash
         env:
           PDAL_RUN_INTEGRATION: 'true'
-        shell: bash
         run: |
           if [[ "$RUNNER_OS" == "Linux" ]]; then
             xvfb-run -a mvn -B -ntp clean verify
