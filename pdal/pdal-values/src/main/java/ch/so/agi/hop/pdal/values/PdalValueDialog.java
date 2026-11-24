@@ -1,6 +1,11 @@
 package ch.so.agi.hop.pdal.values;
 
+import ch.so.agi.hop.commons.core.SourceMode;
+import ch.so.agi.hop.commons.core.ValueOrField;
+import ch.so.agi.hop.commons.ui.EditorKind;
+import ch.so.agi.hop.commons.ui.ValueOrFieldControl;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import org.apache.hop.core.variables.IVariables;
 import org.apache.hop.pipeline.PipelineMeta;
@@ -10,6 +15,9 @@ import org.apache.hop.ui.core.widget.TextVar;
 import org.apache.hop.ui.pipeline.transform.BaseTransformDialog;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.ScrolledComposite;
+import org.eclipse.swt.layout.FormAttachment;
+import org.eclipse.swt.layout.FormData;
+import org.eclipse.swt.layout.FormLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -22,6 +30,8 @@ import org.eclipse.swt.widgets.Text;
 
 /** Operation specific fields, edited on a clone so Cancel cannot change the pipeline. */
 public final class PdalValueDialog extends BaseTransformDialog {
+  private static final List<String> BOUNDS = List.of("minX", "minY", "minZ", "maxX", "maxY", "maxZ");
+
   private final PdalValueMeta input;
 
   public PdalValueDialog(
@@ -34,12 +44,19 @@ public final class PdalValueDialog extends BaseTransformDialog {
   public String open() {
     shell = new Shell(getParent(), SWT.DIALOG_TRIM | SWT.RESIZE);
     shell.setText("Point Cloud " + titleCase(input.operation().name()));
-    shell.setLayout(new GridLayout(1, false));
+    var layout = new FormLayout();
+    layout.marginWidth = 8;
+    layout.marginHeight = 8;
+    shell.setLayout(layout);
     PropsUi.setLook(shell);
     setShellImage(shell, input);
 
     var scroll = new ScrolledComposite(shell, SWT.V_SCROLL);
-    scroll.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+    var scrollData = new FormData();
+    scrollData.left = new FormAttachment(0);
+    scrollData.right = new FormAttachment(100);
+    scrollData.top = new FormAttachment(0);
+    scroll.setLayoutData(scrollData);
     scroll.setExpandHorizontal(true);
     scroll.setExpandVertical(true);
 
@@ -54,12 +71,12 @@ public final class PdalValueDialog extends BaseTransformDialog {
     var controls = new LinkedHashMap<String, Control>();
     String fields =
         switch (input.operation()) {
-          case READER -> "source sourceField driver valueField overrideSrs resolution";
+          case READER -> "source driver valueField overrideSrs resolution";
           case INFO -> "valueField infoFields prefix";
-          case CROP -> "valueField outputValueField boundsFields minX minY minZ maxX maxY maxZ";
-          case REPROJECT -> "valueField outputValueField targetCrs targetCrsField";
+          case CROP -> "valueField outputValueField minX minY minZ maxX maxY maxZ";
+          case REPROJECT -> "valueField outputValueField targetCrs";
           case WRITER ->
-              "valueField source sourceField overwrite compression minorVersion extraDims overrideSrs threads forward prefix";
+              "valueField source overwrite compression minorVersion extraDims overrideSrs threads forward prefix";
           case FILTER -> "valueField outputValueField expression invertFilter where";
           case RANGE -> "valueField outputValueField limits where";
           case CALCULATOR -> "valueField outputValueField assignmentKind assignment condition where";
@@ -83,9 +100,33 @@ public final class PdalValueDialog extends BaseTransformDialog {
         if (name.isEmpty()) continue;
         var field = PdalValueMeta.class.getDeclaredField(name);
         field.setAccessible(true);
-        new Label(body, SWT.NONE).setText(label(name));
+        new Label(body, SWT.NONE).setText(
+            name.equals("source") && input.operation() == PdalValueMeta.Operation.WRITER
+                ? "Output file" : label(name));
         Control control;
-        if (field.getType() == boolean.class) {
+        boolean bound = BOUNDS.contains(name);
+        if (bound || name.equals("source") || name.equals("targetCrs")) {
+          EditorKind kind = name.equals("source")
+              ? (input.operation() == PdalValueMeta.Operation.READER
+                  ? EditorKind.FILE_OPEN : EditorKind.FILE_SAVE)
+              : EditorKind.TEXT;
+          boolean fromField = switch (name) {
+            case "source" -> input.isSourceField();
+            case "targetCrs" -> input.isTargetCrsField();
+            default -> input.isBoundsFields();
+          };
+          var builder = ValueOrFieldControl.builder(body, variables)
+              .editor(kind)
+              .fieldProvider(this::inputFieldNames);
+          if (bound) builder.onChange(() -> synchronizeBoundsMode(controls, name));
+          var editor = builder.build();
+          String initial = (String) field.get(input);
+          editor.setValue(fromField
+              ? new ValueOrField(SourceMode.FIELD, "", initial)
+              : new ValueOrField(SourceMode.CONFIGURED, initial, ""));
+          editor.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+          control = editor;
+        } else if (field.getType() == boolean.class) {
           var button = new Button(body, SWT.CHECK);
           button.setSelection(field.getBoolean(input));
           control = button;
@@ -120,7 +161,11 @@ public final class PdalValueDialog extends BaseTransformDialog {
     scroll.setMinSize(body.computeSize(SWT.DEFAULT, SWT.DEFAULT));
 
     var buttons = new Composite(shell, SWT.NONE);
-    buttons.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, true, false));
+    var buttonData = new FormData();
+    buttonData.right = new FormAttachment(100);
+    buttonData.bottom = new FormAttachment(100);
+    buttons.setLayoutData(buttonData);
+    scrollData.bottom = new FormAttachment(buttons, -8);
     buttons.setLayout(new GridLayout(2, true));
     var ok = new Button(buttons, SWT.PUSH);
     ok.setText("OK");
@@ -135,12 +180,24 @@ public final class PdalValueDialog extends BaseTransformDialog {
             for (var entry : controls.entrySet()) {
               var field = PdalValueMeta.class.getDeclaredField(entry.getKey());
               field.setAccessible(true);
-              Object value =
-                  entry.getValue() instanceof Button button
-                      ? button.getSelection()
-                      : entry.getValue() instanceof ComboVar combo
-                          ? combo.getText()
-                          : ((TextVar) entry.getValue()).getText();
+              Object value;
+              if (entry.getValue() instanceof ValueOrFieldControl editor) {
+                var selection = editor.getValue();
+                boolean fromField = selection.mode() == SourceMode.FIELD;
+                value = fromField ? selection.fieldName() : selection.configuredValue();
+                switch (entry.getKey()) {
+                  case "source" -> edited.setSourceField(fromField);
+                  case "targetCrs" -> edited.setTargetCrsField(fromField);
+                  case "minX" -> edited.setBoundsFields(fromField);
+                  default -> {}
+                }
+              } else if (entry.getValue() instanceof Button button) {
+                value = button.getSelection();
+              } else if (entry.getValue() instanceof ComboVar combo) {
+                value = combo.getText();
+              } else {
+                value = ((TextVar) entry.getValue()).getText();
+              }
               if (field.getType() == int.class) value = Integer.parseInt((String) value);
               field.set(edited, value);
             }
@@ -153,6 +210,9 @@ public final class PdalValueDialog extends BaseTransformDialog {
               field.setAccessible(true);
               field.set(input, field.get(edited));
             }
+            if (controls.containsKey("source")) input.setSourceField(edited.isSourceField());
+            if (controls.containsKey("targetCrs")) input.setTargetCrsField(edited.isTargetCrsField());
+            if (controls.containsKey("minX")) input.setBoundsFields(edited.isBoundsFields());
             transformName = wTransformName.getText();
             input.setChanged();
             shell.dispose();
@@ -172,13 +232,29 @@ public final class PdalValueDialog extends BaseTransformDialog {
         });
 
     shell.setDefaultButton(ok);
-    shell.pack();
-    shell.open();
+    shell.addListener(SWT.Close, event -> transformName = null);
+    shell.setSize(760, 680);
     var display = shell.getDisplay();
+    shell.open();
     while (!shell.isDisposed()) {
       if (!display.readAndDispatch()) display.sleep();
     }
     return transformName;
+  }
+
+  private String[] inputFieldNames() throws org.apache.hop.core.exception.HopTransformException {
+    var fields = pipelineMeta.getPrevTransformFields(variables, transformName);
+    return fields == null ? new String[0] : fields.getFieldNames();
+  }
+
+  private static void synchronizeBoundsMode(Map<String, Control> controls, String changed) {
+    SourceMode mode = ((ValueOrFieldControl) controls.get(changed)).getValue().mode();
+    for (String name : BOUNDS) {
+      var editor = (ValueOrFieldControl) controls.get(name);
+      var value = editor.getValue();
+      if (value.mode() != mode)
+        editor.setValue(new ValueOrField(mode, value.configuredValue(), value.fieldName()));
+    }
   }
 
   private static boolean isCombo(String name) {

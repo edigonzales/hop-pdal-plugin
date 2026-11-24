@@ -23,6 +23,12 @@ The pipelines expect a LAS/LAZ (or COPC/EPT/BPF/text) file. Pipelines that end i
 Writer run the whole planned PDAL pipeline once; the reader only reads the header for the schema.
 The Statistics and Point Cloud to Rows pipelines execute the plan themselves.
 
+In the Reader, Writer and Reproject dialogs, select a configured value or an input field
+for the source, output file or target CRS. The configured source accepts manually entered
+paths, URLs and Hop variables. In Crop, changing the mode of any bound switches all six
+bounds together. Both entries stay available while editing. OK stores the active entries.
+
+
 Run an example with the Apache Hop client:
 
 ```sh
