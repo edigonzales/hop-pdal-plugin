@@ -18,9 +18,6 @@ jobs:
           - label: linux-x86_64
             os: ubuntu-24.04
             classifier: linux-x86_64
-          - label: osx-aarch64
-            os: macos-15
-            classifier: osx-aarch64
           - label: windows-x86_64
             os: windows-2025
             classifier: windows-x86_64
